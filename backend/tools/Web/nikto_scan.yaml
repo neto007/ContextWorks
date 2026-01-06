@@ -1,0 +1,43 @@
+name: Nikto Scanner
+description: Web server scanner which performs comprehensive tests against web servers for multiple items.
+docker:
+  image: ''
+  base_image: python:3.11-slim
+  apt_packages:
+  - git
+  - libnet-ssleay-perl
+  - libio-socket-ssl-perl
+  pip_packages: []
+  run_commands:
+  - git clone https://github.com/sullo/nikto.git /opt/nikto && ln -s /opt/nikto/program/nikto.pl /usr/local/bin/nikto
+  docker_mode: custom
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 4096Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      description: Target URL or IP address
+      required: true
+    port:
+      type: string
+      description: Port number (e.g., 80, 443). If not provided, Nikto tries to guess.
+      default: ''
+    tuning:
+      type: string
+      description: Tuning options (e.g., '12' for specific tests).
+      default: ''
+    ssl:
+      type: boolean
+      description: Force SSL mode
+      default: false
+  required:
+  - target

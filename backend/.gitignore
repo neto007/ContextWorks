@@ -1,0 +1,29 @@
+# Database
+security.db
+
+# Logs
+*.log
+backend*.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Development scripts
+*_test.py
+fetch_*.py
+update_*.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

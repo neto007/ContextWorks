@@ -1,0 +1,84 @@
+name: Nmap Scanner
+description: Advanced Network Security Scanner using Nmap
+
+
+docker:
+  image: ''
+  base_image: python:3.11-slim
+  apt_packages:
+  - nmap
+  pip_packages: []
+  run_commands: []
+  docker_mode: custom
+  # Opções de Multi-stage build (Comentadas pois não são usadas aqui, mas suportadas)
+  # final_base: python:3.11-slim
+  # final_run_commands: []
+  # copy_from_builder: []
+  # dockerfile: "" # Se especificado, usa um Dockerfile customizado e ignora o resto
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      description: Target IP address, hostname, or CIDR range
+      required: true
+    port_spec:
+      type: string
+      description: Ports to scan (e.g., '80,443', '1-1000', '-p-' for all ports)
+      default: ''
+    scan_type:
+      type: string
+      description: Type of scan to perform
+      enum:
+      - syn
+      - connect
+      - udp
+      - version
+      - comprehensive
+      default: connect
+    timing:
+      type: string
+      description: Timing template (T0-T5)
+      enum:
+      - T0
+      - T1
+      - T2
+      - T3
+      - T4
+      - T5
+      default: T3
+    service_detection:
+      type: boolean
+      description: Probe open ports to determine service/version info (-sV)
+      default: false
+    os_detection:
+      type: boolean
+      description: Enable OS detection (-O)
+      default: false
+    aggressive:
+      type: boolean
+      description: Enable aggressive scan options (-A)
+      default: false
+    scripts:
+      type: string
+      description: NSE Scripts to run (e.g., 'vuln', 'http-title')
+      default: ''
+    arguments:
+      type: string
+      description: Additional raw Nmap arguments
+      default: ''
+  required:
+  - target
+
+
+
+

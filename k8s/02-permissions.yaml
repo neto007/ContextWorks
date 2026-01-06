@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backend-sa
+  namespace: contextworks-platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: job-manager-role
+  namespace: contextworks-platform
+rules:
+- apiGroups: ["batch", ""]
+  resources: ["jobs", "pods", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "delete", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: job-manager-binding
+  namespace: contextworks-platform
+subjects:
+- kind: ServiceAccount
+  name: backend-sa
+  namespace: contextworks-platform
+roleRef:
+  kind: Role
+  name: job-manager-role
+  apiGroup: rbac.authorization.k8s.io

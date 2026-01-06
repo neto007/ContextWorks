@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: contextworks-platform
+  labels:
+    app: cloudflared
+spec:
+  replicas: 2 # High availability
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+      - name: cloudflared
+        image: cloudflare/cloudflared:latest
+        args:
+        - tunnel
+        - --url
+        - http://10.98.157.163:80
+        - --no-autoupdate
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          failureThreshold: 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+# Optional: If you need to map multiple services via Ingress, you would use Ingress Controller + Cloudflare Tunnel as LoadBalancer.
+# For simple setups, the Tunnel Dashboard "Public Hostname" pointing to http://frontend:80 is sufficient.
