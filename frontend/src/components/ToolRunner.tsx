@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Code, Terminal, AlertCircle, Clock, ArrowLeft } from 'lucide-react';
+import { Play, Code, Terminal, AlertCircle, Clock, ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import CodeEditor from './CodeEditor';
 import { Button } from "@/components/ui/Button/Button";
 import GlowImage from './GlowImage';
@@ -27,6 +27,7 @@ const ToolRunner: React.FC<ToolRunnerProps> = ({ tool, onBack }) => {
     const [activeTab, setActiveTab] = useState<'run' | 'code' | 'history'>('run');
     const [outputTab, setOutputTab] = useState<'output' | 'logs'>('output');
     const [formValues, setFormValues] = useState<Record<string, any>>({});
+    const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([]);
 
     const {
         executing,
@@ -64,7 +65,11 @@ const ToolRunner: React.FC<ToolRunnerProps> = ({ tool, onBack }) => {
 
     const handleRun = async () => {
         setOutputTab('logs');
-        await runTool(tool.full_id, tool.path, formValues);
+        const env = envVars.reduce((acc, curr) => {
+            if (curr.key) acc[curr.key] = curr.value;
+            return acc;
+        }, {} as Record<string, string>);
+        await runTool(tool.full_id, tool.path, formValues, env);
     };
 
     const handleHistoryRestore = (execution: any) => {
@@ -205,6 +210,61 @@ const ToolRunner: React.FC<ToolRunnerProps> = ({ tool, onBack }) => {
                                     ))}
                                 </div>
                             )}
+                        </div>
+
+                        {/* Environment Variables Section */}
+                        <div className="px-6 pb-4 border-b border-[#1a1b26] mb-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-[#8be9fd]">Env Variables</h3>
+                                <button
+                                    onClick={() => setEnvVars([...envVars, { key: '', value: '' }])}
+                                    className="p-1 hover:bg-[#1a1b26] rounded text-[#50fa7b] transition-colors"
+                                    title="Add Variable"
+                                >
+                                    <Plus size={16} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {envVars.map((env, index) => (
+                                    <div key={index} className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="KEY"
+                                            value={env.key}
+                                            onChange={(e) => {
+                                                const newEnvVars = [...envVars];
+                                                newEnvVars[index].key = e.target.value;
+                                                setEnvVars(newEnvVars);
+                                            }}
+                                            className="flex-1 bg-[#1a1b26] text-white rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#bd93f9]"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="VALUE"
+                                            value={env.value}
+                                            onChange={(e) => {
+                                                const newEnvVars = [...envVars];
+                                                newEnvVars[index].value = e.target.value;
+                                                setEnvVars(newEnvVars);
+                                            }}
+                                            className="flex-1 bg-[#1a1b26] text-white rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#bd93f9]"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const newEnvVars = envVars.filter((_, i) => i !== index);
+                                                setEnvVars(newEnvVars);
+                                            }}
+                                            className="p-2 text-[#ff5555] hover:bg-[#ff5555]/10 rounded transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {envVars.length === 0 && (
+                                    <p className="text-xs text-[#6272a4] italic">No environment variables set</p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="p-6 pt-0">

@@ -1,0 +1,36 @@
+name: Kube-bench Audit
+description: CIS Kubernetes Benchmark tool.
+arguments:
+  - name: arguments
+    description: Additional Kube-bench arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - wget
+    - curl
+  run_commands:
+    - wget https://github.com/aquasecurity/kube-bench/releases/download/v0.7.3/kube-bench_0.7.3_linux_amd64.tar.gz
+    - tar -xzf kube-bench_0.7.3_linux_amd64.tar.gz
+    - mv kube-bench /usr/local/bin/
+    - mkdir -p /etc/kube-bench
+    - mv cfg /etc/kube-bench/
+    - rm kube-bench_0.7.3_linux_amd64.tar.gz
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    arguments:
+      type: string
+      default: ""

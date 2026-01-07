@@ -1,0 +1,44 @@
+name: Semgrep Scan
+description: Lightweight static analysis for many languages.
+arguments:
+  - name: target
+    description: Target directory to scan
+    required: false
+    type: string
+    default: "."
+  - name: config
+    description: Semgrep config (e.g. p/default, auto)
+    required: false
+    type: string
+    default: "p/default"
+  - name: arguments
+    description: Additional Semgrep arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - semgrep
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      default: "."
+    config:
+      type: string
+      default: "p/default"
+    arguments:
+      type: string
+      default: ""

@@ -1,0 +1,52 @@
+name: SafeDep VET
+description: Dependency vulnerability and malicious package scanner.
+arguments:
+  - name: path
+    description: Directory or file to scan (default is current directory)
+    required: false
+    type: string
+    default: "."
+  - name: repository
+    description: Git repository URL to clone and scan
+    required: false
+    type: string
+  - name: arguments
+    description: Additional VET arguments (e.g., --malware-query, --filter)
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+    - git
+  run_commands:
+    - curl -L https://github.com/safedep/vet/releases/download/v1.12.15/vet_Linux_x86_64.tar.gz -o vet.tar.gz
+    - tar -xzf vet.tar.gz
+    - mv vet /usr/local/bin/
+    - chmod +x /usr/local/bin/vet
+    - rm vet.tar.gz
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  properties:
+    path:
+      type: string
+      description: Directory or file to scan
+      default: "."
+    repository:
+      type: string
+      description: Git repository URL to clone and scan
+    arguments:
+      type: string
+      description: Additional VET arguments (e.g., --malware-query, --filter)
+      default: ""

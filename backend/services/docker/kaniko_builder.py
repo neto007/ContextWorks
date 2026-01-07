@@ -94,15 +94,24 @@ class KanikoBuilderService:
         # Determine destination string (Kaniko format)
         destination = ""
         if registry_config.get("type") in ["internal", "local"]:
-             # Internal Registry in K8s (default: mcp-registry:5000)
-             # We assume it's accessible via Service DNS
-             internal_reg_host = os.getenv("INTERNAL_REGISTRY_HOST", "mcp-registry.security-platform.svc:5000")
-             destination = f"{internal_reg_host}/{image_tag}"
+             # image_tag from utils.generate_image_tag() already includes registry prefix
+             # For Minikube/Dev, we might need to use a different internal hostname for PUSH
+             # than what the K8s nodes use for PULL.
+             push_registry = settings.DOCKER_REGISTRY_PUSH
+             pull_registry = settings.DOCKER_REGISTRY
+             
+             if pull_registry in image_tag and push_registry != pull_registry:
+                 destination = image_tag.replace(pull_registry, push_registry)
+                 database.append_build_logs(job_id, f"📝 Adjusted destination for internal push: {destination}\n")
+             else:
+                 destination = image_tag
+                 
              database.append_build_logs(job_id, f"🎯 Destination: Internal Registry ({destination})\n")
         else:
              # External Registry
              destination = construct_remote_tag(image_tag, registry_config)
              database.append_build_logs(job_id, f"🎯 Destination: {registry_config['type']} ({destination})\n")
+
 
         # 3. Backend Context URL
         # The Kaniko pod must reach this backend. 

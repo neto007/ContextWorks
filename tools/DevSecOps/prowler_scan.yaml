@@ -1,0 +1,37 @@
+name: Prowler Audit
+description: Security tool for AWS, Azure and GCP.
+arguments:
+  - name: provider
+    description: Cloud provider (aws, azure, gcp)
+    required: false
+    type: string
+    default: "aws"
+  - name: arguments
+    description: Additional Prowler arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - prowler
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+
+schema:
+  type: object
+  properties:
+    provider:
+      type: string
+      enum: ["aws", "azure", "gcp"]
+      default: "aws"
+    arguments:
+      type: string
+      default: ""

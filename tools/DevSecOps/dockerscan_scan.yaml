@@ -1,0 +1,45 @@
+name: Dockerscan
+description: A suite for security analysis in Docker.
+arguments:
+  - name: target
+    description: Target image or info
+    required: true
+    type: string
+  - name: scan_type
+    description: Type of scan (image, scan)
+    required: false
+    type: string
+    default: "image"
+  - name: arguments
+    description: Additional Dockerscan arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - dockerscan
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+    scan_type:
+      type: string
+      enum: ["image", "scan"]
+      default: "image"
+    arguments:
+      type: string
+      default: ""

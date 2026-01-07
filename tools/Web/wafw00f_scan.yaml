@@ -1,0 +1,38 @@
+name: Wafw00f Fingerprinting
+description: Web Application Firewall Fingerprinting Tool.
+arguments:
+  - name: target
+    description: Target URL
+    required: true
+    type: string
+  - name: arguments
+    description: Additional Wafw00f arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - wafw00f
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL
+    arguments:
+      type: string
+      description: Additional Wafw00f arguments
+      default: ""

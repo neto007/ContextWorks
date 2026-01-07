@@ -1,0 +1,41 @@
+name: Vuls Scan
+description: Agentless vulnerability scanner for Linux/FreeBSD.
+arguments:
+  - name: arguments
+    description: Additional Vuls arguments (e.g. scan, report)
+    required: false
+    type: string
+    default: "scan"
+
+docker:
+  docker_mode: custom
+  base_image: golang:alpine
+  apt_packages:
+    - python3
+    - git
+    - make
+    - gcc
+    - musl-dev
+    - sqlite
+  run_commands:
+    - go install github.com/future-architect/vuls@latest
+    - go install github.com/vulsio/go-cve-dictionary@latest
+    - go install github.com/vulsio/goval-dictionary@latest
+    - go install github.com/vulsio/gost@latest
+    - go install github.com/vulsio/go-exploitdb@latest
+    - cp /go/bin/* /usr/local/bin/
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    arguments:
+      type: string
+      default: "scan"

@@ -1,0 +1,38 @@
+name: Grype Scan
+description: Vulnerability scanner for container images and filesystems.
+arguments:
+  - name: target
+    description: Target image or path
+    required: true
+    type: string
+  - name: arguments
+    description: Additional Grype arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+  run_commands:
+    - curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+  requests:
+    cpu: 200m
+    memory: 1024Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+    arguments:
+      type: string
+      default: ""

@@ -1,0 +1,42 @@
+name: Sqlmap Scan
+description: Automatic SQL injection and database takeover tool.
+arguments:
+  - name: target
+    description: Target URL or list of URLs (comma separated)
+    required: true
+    type: string
+  - name: arguments
+    description: Additional Sqlmap arguments (e.g. --level 5 --risk 3)
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - wget
+    - git
+  run_commands:
+    - git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git /opt/sqlmap
+    - ln -s /opt/sqlmap/sqlmap.py /usr/local/bin/sqlmap
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL or list of URLs
+    arguments:
+      type: string
+      description: Additional Sqlmap arguments
+      default: ""

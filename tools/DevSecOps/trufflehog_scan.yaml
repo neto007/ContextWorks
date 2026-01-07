@@ -1,0 +1,47 @@
+name: Trufflehog
+description: Find secrets hidden in git repositories and filesystems.
+arguments:
+  - name: target
+    description: Target (Git URL, filesystem path, etc.)
+    required: true
+    type: string
+  - name: scan_type
+    description: Scan type (git, filesystem, github, gitlab)
+    required: false
+    type: string
+    default: "git"
+  - name: arguments
+    description: Additional Trufflehog arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+  run_commands:
+    - curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+    scan_type:
+      type: string
+      enum: ["git", "filesystem", "github", "gitlab"]
+      default: "git"
+    arguments:
+      type: string
+      default: ""

@@ -1,0 +1,42 @@
+name: Katana Crawler
+description: Next-generation crawling and spidering framework.
+arguments:
+  - name: target
+    description: Target URL
+    required: true
+    type: string
+  - name: arguments
+    description: Additional Katana arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+    - unzip
+  run_commands:
+    - curl -sL https://github.com/projectdiscovery/katana/releases/download/v1.1.0/katana_1.1.0_linux_amd64.zip -o katana.zip
+    - unzip katana.zip && mv katana /usr/local/bin/ && rm katana.zip
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL
+    arguments:
+      type: string
+      description: Additional Katana arguments
+      default: ""

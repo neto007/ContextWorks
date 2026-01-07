@@ -65,6 +65,10 @@ curl -X POST http://localhost:8000/mcp/YOUR_MCP_ID/message \\
       "name": "nikto",
       "arguments": {
         "target": "https://example.com"
+      },
+      "env": {
+        "DEBUG": "true",
+        "API_KEY": "secret"
       }
     }
   }'`;
@@ -105,7 +109,8 @@ response = requests.post(
         "method": "tools/call",
         "params": {
             "name": "nikto",
-            "arguments": {"target": "https://example.com"}
+            "arguments": {"target": "https://example.com"},
+            "env": {"DEBUG": "true"}
         }
     }
 )

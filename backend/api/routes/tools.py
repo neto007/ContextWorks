@@ -170,8 +170,8 @@ def save_file_content(request: ToolContentRequest):
         raise HTTPException(status_code=400, detail="tool_id or valid path is required")
         
     try:
-        tool_service.save_tool_content(target_id, request.content, request.path)
-        return {"status": "success"}
+        changed = tool_service.save_tool_content(target_id, request.content, request.path)
+        return {"status": "success", "changed": changed}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,0 +1,31 @@
+name: Kubiscan
+description: Scan Kubernetes cluster for risky permissions (RBAC).
+arguments:
+  - name: arguments
+    description: Additional Kubiscan arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - git
+  run_commands:
+    - git clone --depth 1 https://github.com/cyberark/KubiScan.git /opt/kubiscan
+    - cd /opt/kubiscan && pip install -r requirements.txt
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    arguments:
+      type: string
+      default: ""

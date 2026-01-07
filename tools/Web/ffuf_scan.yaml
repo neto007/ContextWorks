@@ -1,0 +1,54 @@
+name: FFUF Scan
+description: Fuzz Faster U Fool - A fast web fuzzer written in Go.
+# Force rebuild for build optimization fix
+arguments:
+  - name: target
+    description: Target URL (use FUZZ keyword for insertion point)
+    required: true
+    type: string
+  - name: wordlist
+    description: Path or URL to wordlist
+    required: false
+    type: string
+  - name: arguments
+    description: Additional FFUF arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+    - tar
+  run_commands:
+    - curl -sL https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_linux_amd64.tar.gz -o ffuf.tar.gz
+    - tar -xf ffuf.tar.gz
+    - mv ffuf /usr/local/bin/
+    - rm ffuf.tar.gz
+    - mkdir -p /usr/share/wordlists
+    - curl -sL https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt -o /usr/share/wordlists/common.txt
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL (use FUZZ keyword for insertion point)
+    wordlist:
+      type: string
+      description: Path or URL to wordlist
+    arguments:
+      type: string
+      description: Additional FFUF arguments
+      default: ""

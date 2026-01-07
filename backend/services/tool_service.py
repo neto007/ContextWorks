@@ -13,9 +13,16 @@ from .tool.content_handler import (
     get_default_script_template, 
     resolve_tool_id_from_path,
     get_tool_content,
-    save_tool_content,
+    save_tool_content as _save_tool_content_impl,
     generate_yaml_metadata
 )
+
+def save_tool_content(target_id: str, content: str, path: str) -> bool:
+    """Wrapper to save content and clear cache. Returns True if changed."""
+    changed = _save_tool_content_impl(target_id, content, path)
+    if changed:
+        scan_tools.cache_clear()
+    return changed
 
 TOOLS_BASE_DIR = settings.TOOLS_BASE_DIR
 
@@ -191,61 +198,15 @@ def update_tool(category: str, tool_id: str, tool_data: Dict) -> Dict:
     docker_config = tool_data.get('docker')
     if docker_config:
         # Carregar configuração Docker existente do YAML
-        existing_docker = None
+        existing_docker = {}
         try:
             if existing.get('configuration'):
                 config = yaml.safe_load(existing['configuration']) or {}
                 existing_docker = config.get('docker', {})
-        except:
-            existing_docker = {}
+        except: pass
         
-        # Comparar APENAS campos que afetam a construção da imagem Docker
-        # IGNORAR: resources (CPU/memory não afetam a imagem!)
-        # IGNORAR: image auto-gerado (security-platform-tool-*)
-        if existing_docker:
-            # Extrair campos relevantes
-            new_mode = docker_config.get('docker_mode')
-            old_mode = existing_docker.get('docker_mode')
-            
-            # Apenas comparar image se for PRÉ-EXISTENTE (não auto-gerado)
-            new_image = docker_config.get('image', '')
-            old_image = existing_docker.get('image', '')
-            
-            # Ignorar images auto-geradas que começam com 'security-platform-tool-'
-            if new_image.startswith('security-platform-tool-') or old_image.startswith('security-platform-tool-'):
-                new_image = None
-                old_image = None
-            
-            new_base = docker_config.get('base_image')
-            old_base = existing_docker.get('base_image')
-            
-            new_apt = sorted(docker_config.get('apt_packages', []))
-            old_apt = sorted(existing_docker.get('apt_packages', []))
-            
-            new_pip = sorted(docker_config.get('pip_packages', []))
-            old_pip = sorted(existing_docker.get('pip_packages', []))
-            
-            docker_changed = (
-                new_mode != old_mode or
-                new_image != old_image or
-                new_base != old_base or
-                new_apt != old_apt or
-                new_pip != old_pip
-            )
-            
-            logger.debug("Docker config comparison", extra={"extra_fields": {
-                "tool_id": tool_id,
-                "mode_changed": new_mode != old_mode,
-                "image_changed": new_image != old_image,
-                "base_changed": new_base != old_base,
-                "apt_changed": new_apt != old_apt,
-                "pip_changed": new_pip != old_pip,
-                "docker_changed": docker_changed
-            }})
-        else:
-            # Se não havia config Docker antes, considerar como mudança
-            docker_changed = True
-            logger.debug("No existing Docker config found", extra={"extra_fields": {"tool_id": tool_id}})
+        from .tool.content_handler import is_docker_config_changed
+        docker_changed = is_docker_config_changed(docker_config, existing_docker)
     
     logger.debug("Analyzing tool changes", extra={"extra_fields": {
         "tool_id": tool_id,

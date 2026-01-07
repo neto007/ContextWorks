@@ -2,6 +2,54 @@ import json
 import yaml
 from typing import Dict, Optional
 from core import database
+from core.logger import logger
+
+def is_docker_config_changed(new_config: Dict, existing_config: Optional[Dict]) -> bool:
+    """Compara se as mudanças na configuração Docker justificam um novo build."""
+    if not existing_config:
+        return True
+        
+    # Extrair campos relevantes que afetam a construção da imagem Docker
+    # IGNORAR: resources (CPU/memory não afetam a imagem!)
+    new_mode = new_config.get('docker_mode')
+    old_mode = existing_config.get('docker_mode')
+    
+    # Apenas comparar image se for PRÉ-EXISTENTE (não auto-gerado)
+    new_image = new_config.get('image', '')
+    old_image = existing_config.get('image', '')
+    
+    # Ignorar images auto-geradas que começam com 'security-platform-tool-'
+    if (new_image and new_image.startswith('security-platform-tool-')) or \
+       (old_image and old_image.startswith('security-platform-tool-')):
+        new_image = None
+        old_image = None
+    
+    new_base = new_config.get('base_image')
+    old_base = existing_config.get('base_image')
+    
+    new_apt = sorted(new_config.get('apt_packages', []))
+    old_apt = sorted(existing_config.get('apt_packages', []))
+    
+    new_pip = sorted(new_config.get('pip_packages', []))
+    old_pip = sorted(existing_config.get('pip_packages', []))
+    
+    changed = (
+        new_mode != old_mode or
+        new_image != old_image or
+        new_base != old_base or
+        new_apt != old_apt or
+        new_pip != old_pip
+    )
+    
+    if changed:
+        logger.debug("Docker config changed", extra={"extra_fields": {
+            "mode": f"{old_mode} -> {new_mode}",
+            "base": f"{old_base} -> {new_base}",
+            "apt": f"{old_apt} -> {new_apt}",
+            "pip": f"{old_pip} -> {new_pip}"
+        }})
+        
+    return changed
 
 def get_default_script_template(tool_name: str) -> str:
     """Generate a default Python script template."""
@@ -66,8 +114,8 @@ def get_tool_content(target_id: str, file_type: str = "py", path: str = None) ->
     
     raise ValueError(f"Invalid file type: {file_type}")
 
-def save_tool_content(target_id: str, content: str, path: str):
-    """Saves script or configuration content to DB."""
+def save_tool_content(target_id: str, content: str, path: str) -> bool:
+    """Saves script or configuration content to DB. Returns True if content actually changed."""
     tool = database.get_tool(target_id)
     if not tool:
         # UPSERT LOGIC: Create tool if it doesn't exist
@@ -102,36 +150,72 @@ def save_tool_content(target_id: str, content: str, path: str):
     full_id = tool['id']
     
     if path and path.endswith('.py'):
-        database.save_tool(
-            full_id, tool['name'], category, 
-            content, tool['arguments'], tool.get('description', ""),
-            tool.get('configuration', "")
-        )
+        changed = content != tool['script_code']
+        if changed:
+            database.save_tool(
+                full_id, tool['name'], category, 
+                content, tool['arguments'], tool.get('description', ""),
+                tool.get('configuration', "")
+            )
+        return changed
         
     elif path and (path.endswith('.yaml') or path.endswith('.yml')):
         try:
             metadata = yaml.safe_load(content) or {}
-            args = []
-            if 'schema' in metadata and 'properties' in metadata['schema']:
-                for arg_name, arg_def in metadata['schema']['properties'].items():
-                    args.append({
-                        'name': arg_name,
-                        'type': arg_def.get('type', 'string'),
-                        'description': arg_def.get('description', ''),
-                        'required': arg_name in metadata['schema'].get('required', []),
-                        'default': arg_def.get('default', '')
-                    })
             
-            # Ensure workspace exists before saving tool (Upsert Category)
-            existing_ws = database.get_workspace(category)
-            if not existing_ws:
-                database.save_workspace(category, "")
-                
-            database.save_tool(
-                full_id, metadata.get('name', tool['name']), category,
-                tool['script_code'], args, metadata.get('description', tool.get('description', "")),
-                content
+            # Detecção de mudanças granulares para YAML
+            existing_config = {}
+            if tool.get('configuration'):
+                try:
+                    existing_config = yaml.safe_load(tool['configuration']) or {}
+                except: pass
+            
+            # 1. Verificar se a configuração Docker mudou
+            docker_changed = is_docker_config_changed(
+                metadata.get('docker', {}), 
+                existing_config.get('docker', {})
             )
+            
+            # 2. Verificar metadados gerais (apenas para persistência, mas docker_changed é o que manda pro build)
+            # No entanto, a CLI quer saber se "algo mudou que justifique build"
+            # Na verdade, a CLI quer saber se o arquivo mudou.
+            # Se mudou apenas a descrição, changed=True mas talvez não disparemos build?
+            # Melhor: changed=True se o conteúdo for diferente. 
+            # A CLI decidirá se builda baseado nisso por enquanto.
+            
+            content_changed = content != tool.get('configuration', "")
+            
+            if content_changed:
+                args = []
+                if 'schema' in metadata and 'properties' in metadata['schema']:
+                    for arg_name, arg_def in metadata['schema']['properties'].items():
+                        args.append({
+                            'name': arg_name,
+                            'type': arg_def.get('type', 'string'),
+                            'description': arg_def.get('description', ''),
+                            'required': arg_name in metadata['schema'].get('required', []),
+                            'default': arg_def.get('default', '')
+                        })
+                
+                # Fallback para arguments (legacy)
+                if not args and 'arguments' in metadata:
+                    args = metadata['arguments']
+
+                # Ensure workspace exists before saving tool (Upsert Category)
+                existing_ws = database.get_workspace(category)
+                if not existing_ws:
+                    database.save_workspace(category, "")
+                    
+                database.save_tool(
+                    full_id, metadata.get('name', tool['name']), category,
+                    tool['script_code'], args, metadata.get('description', tool.get('description', "")),
+                    content
+                )
+            
+            # Retornamos True se houver mudança no conteúdo. 
+            # Mas podemos ser mais espertos e diferenciar mudança de build vs mudança de metadados.
+            # Por simplicidade da CLI hoje: retornamos True se mudou.
+            return content_changed
         except Exception as e:
             raise ValueError(f"Invalid YAML format or DB error: {str(e)}")
     else:

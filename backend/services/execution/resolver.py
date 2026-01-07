@@ -63,11 +63,18 @@ def get_tool_config_from_data(tool_data: Dict[str, Any]) -> dict:
     resource_config = metadata.get('resources', {})
     config = default_config.copy()
     
-    custom_tag = authoritative_tag
+    image_from_config = docker_config.get('image', '')
     
-    if 'image' in docker_config and docker_config['image']:
-        # Only allow explicit image override (e.g. for external tools)
-        config["image"] = docker_config['image']
+    # Authoritative tag generation
+    authoritative_tag = utils.generate_image_tag(tool_id)
+    
+    if image_from_config:
+        # If it's one of our internal tools but lacks a registry prefix (no slash),
+        # force re-generation to ensure the registry prefix is present.
+        if image_from_config.startswith("security-platform-tool-") and "/" not in image_from_config:
+             config["image"] = authoritative_tag
+        else:
+             config["image"] = image_from_config
     else:
         # ALWAYS use authoritative tag for our internal tools
         # base_image is for BUILD time (FROM python...) not execution time

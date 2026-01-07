@@ -116,15 +116,18 @@ func syncScripts(baseDir string, baseURL string, token string, prune bool, build
         })
         
         resp, err := client.Request("POST", "/api/workspaces", reqBody)
-        if err == nil && (resp.StatusCode == 200 || resp.StatusCode == 201 || resp.StatusCode == 400) {
+        if err != nil {
+            if updates == nil { logger.Error("Failed to create workspace", err) }
+            return
+        }
+        defer resp.Body.Close()
+        
+        if resp.StatusCode == 200 || resp.StatusCode == 201 || resp.StatusCode == 400 {
             // 400 might mean it exists, which is fine
             knownCategories[name] = true
             if updates == nil { logger.Success("Done") }
         } else {
             if updates == nil { logger.Error("Failed", fmt.Errorf("status %d", resp.StatusCode)) }
-        }
-        if resp != nil {
-            resp.Body.Close()
         }
     }
 
@@ -210,24 +213,40 @@ func syncScripts(baseDir string, baseURL string, token string, prune bool, build
 				defer resp.Body.Close()
                 
                 if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-                    if updates == nil { logger.Success("Done") }
-					scriptsUpdated++
+                    var contentResp struct {
+                        Status  string `json:"status"`
+                        Changed bool   `json:"changed"`
+                    }
+                    isChanged := true // Default for backward compatibility
+                    if err := json.NewDecoder(resp.Body).Decode(&contentResp); err == nil {
+                        isChanged = contentResp.Changed
+                    }
                     
-                    // Track for build if it's a python script (assume main entry point) or yaml config
-                    // Ideally we build once per tool.
-                    // The Name is parts[1] without extension.
-                    toolShortName := strings.TrimSuffix(parts[1], ext)
-                    
-                    // Avoid adding duplicate if we visit both .py and .yaml
-                    found := false
-                    for _, t := range toolsToBuild {
-                        if t.Category == categoryName && t.Name == toolShortName {
-                            found = true
-                            break
+                    if updates == nil { 
+                        if isChanged {
+                            logger.Success("Done (Updated)")
+                        } else {
+                            logger.Info("Done (No changes)")
                         }
                     }
-                    if !found {
-                        toolsToBuild = append(toolsToBuild, ToolID{Category: categoryName, Name: toolShortName})
+					scriptsUpdated++
+                    
+                    // Track for build ONLY IF content or config changed
+                    if isChanged {
+                        // The Name is parts[1] without extension.
+                        toolShortName := strings.TrimSuffix(parts[1], ext)
+                        
+                        // Avoid adding duplicate if we visit both .py and .yaml
+                        found := false
+                        for _, t := range toolsToBuild {
+                            if t.Category == categoryName && t.Name == toolShortName {
+                                found = true
+                                break
+                            }
+                        }
+                        if !found {
+                            toolsToBuild = append(toolsToBuild, ToolID{Category: categoryName, Name: toolShortName})
+                        }
                     }
 
 				} else {

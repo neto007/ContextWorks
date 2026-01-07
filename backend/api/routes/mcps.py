@@ -25,7 +25,8 @@ def create_mcp_server(request: MCPCreateRequest):
         mcp = mcp_manager.create_mcp_server(
             name=request.name,
             description=request.description,
-            tool_ids=request.tool_ids
+            tool_ids=request.tool_ids,
+            env_vars=[e.dict() for e in request.env_vars] if request.env_vars else []
         )
         return {
             "status": "success",
@@ -60,7 +61,8 @@ def update_mcp_server(mcp_id: str, request: MCPUpdateRequest):
             name=request.name,
             description=request.description,
             tool_ids=request.tool_ids,
-            status=request.status
+            status=request.status,
+            env_vars=[e.dict() for e in request.env_vars] if request.env_vars is not None else None
         )
         if not success:
             raise HTTPException(status_code=404, detail="MCP server not found")

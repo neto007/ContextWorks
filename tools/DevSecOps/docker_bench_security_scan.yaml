@@ -1,0 +1,34 @@
+name: Docker Bench Security
+description: Checks for common best-practices around deploying Docker containers in production.
+arguments:
+  - name: arguments
+    description: Additional Docker Bench arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+    - git
+    - procps
+    - iproute2
+  run_commands:
+    - git clone --depth 1 https://github.com/docker/docker-bench-security.git /opt/docker-bench
+    - ln -s /opt/docker-bench/docker-bench-security.sh /usr/local/bin/docker-bench-security.sh
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  properties:
+    arguments:
+      type: string
+      default: ""

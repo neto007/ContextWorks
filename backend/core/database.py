@@ -23,9 +23,18 @@ def init_db():
             CREATE TABLE IF NOT EXISTS mcp_servers (
                 id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT,
                 api_key_hash TEXT NOT NULL, tool_ids TEXT, created_at TEXT,
-                updated_at TEXT, status TEXT DEFAULT 'active'
+                updated_at TEXT, status TEXT DEFAULT 'active',
+                env_vars TEXT DEFAULT '{}'
             )
         ''')
+        
+        # Migration: Ensure env_vars column exists (idempotent)
+        try:
+            cursor.execute('ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS env_vars TEXT DEFAULT \'{}\'')
+        except Exception:
+            conn.rollback()
+        else:
+            conn.commit()
         
         # MCP Connections table
         cursor.execute('''

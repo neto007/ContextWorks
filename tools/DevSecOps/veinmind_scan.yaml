@@ -1,0 +1,51 @@
+name: Veinmind Scan
+description: Container security toolset from Chaitin.
+arguments:
+  - name: target
+    description: Target image, container or IaC path
+    required: true
+    type: string
+  - name: target_type
+    description: Type of target (image, container, iac)
+    required: false
+    type: string
+    default: "image"
+  - name: arguments
+    description: Additional Veinmind arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - wget
+    - curl
+  run_commands:
+    - wget https://github.com/chaitin/veinmind-tools/releases/download/v1.5.8/veinmind-runner_linux_amd64.tar.gz
+    - tar -xzf veinmind-runner_linux_amd64.tar.gz
+    - mv veinmind-runner /usr/local/bin/
+    - rm veinmind-runner_linux_amd64.tar.gz
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2048Mi
+  requests:
+    cpu: 200m
+    memory: 1024Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+    target_type:
+      type: string
+      enum: ["image", "container", "iac"]
+      default: "image"
+    arguments:
+      type: string
+      default: ""

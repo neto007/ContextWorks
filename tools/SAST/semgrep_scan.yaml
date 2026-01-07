@@ -1,0 +1,107 @@
+name: Semgrep Scan
+description: Static Application Security Testing (SAST) tool for finding bugs and security vulnerabilities. Supports local directories and Git repositories.
+docker:
+  image: ''
+  base_image: python:3.11-slim
+  apt_packages:
+  - git
+  pip_packages:
+  - semgrep
+  run_commands: []
+  docker_mode: custom
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2048Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      description: Local directory path OR Git repository URL (https://github.com/user/repo.git)
+      required: true
+    config:
+      type: string
+      description: Rule configuration (auto, p/ci, p/security-audit, p/owasp-top-ten, or custom path/URL)
+      default: auto
+    severity:
+      type: string
+      description: Filter findings by severity level
+      enum:
+      - ERROR
+      - WARNING
+      - INFO
+      default: ''
+    lang:
+      type: string
+      description: Focus analysis on specific language (python, javascript, java, go, etc.)
+      default: ''
+    exclude:
+      type: string
+      description: Comma-separated glob patterns to exclude files/directories
+      default: ''
+    max_memory:
+      type: integer
+      description: Maximum memory to use in MB
+      default: 0
+    timeout:
+      type: integer
+      description: Maximum time to spend on analysis in seconds
+      default: 0
+    token:
+      type: string
+      description: Git access token for cloning private repositories (optional)
+      default: ''
+    arguments:
+      type: string
+      description: Additional raw Semgrep arguments
+      default: ''
+  required:
+  - target
+arguments:
+- name: target
+  type: string
+  description: Local directory path OR Git repository URL (https://github.com/user/repo.git)
+  required: true
+- name: config
+  type: string
+  description: Rule configuration (auto, p/ci, p/security-audit, p/owasp-top-ten, or custom path/URL)
+  required: false
+- name: severity
+  type: string
+  description: Filter findings by severity level
+  required: false
+- name: lang
+  type: string
+  description: Focus analysis on specific language (python, javascript, java, go, etc.)
+  required: false
+- name: exclude
+  type: string
+  description: Comma-separated glob patterns to exclude files/directories
+  required: false
+- name: max_memory
+  type: integer
+  description: Maximum memory to use in MB
+  required: false
+- name: timeout
+  type: integer
+  description: Maximum time to spend on analysis in seconds
+  required: false
+- name: token
+  type: string
+  description: Git access token for cloning private repositories (optional)
+  required: false
+- name: arguments
+  type: string
+  description: Additional raw Semgrep arguments
+  required: false

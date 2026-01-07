@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Check } from 'lucide-react';
+import { X, Loader2, Check, Plus, Trash2, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/Button/Button";
 import LogoUploader from './LogoUploader';
 
@@ -25,6 +25,28 @@ const MCPFormDialog: React.FC<MCPFormDialogProps> = ({ mcp, onClose, onSuccess }
     const [loadingTools, setLoadingTools] = useState(true);
     const [newApiKey, setNewApiKey] = useState<string | null>(null);
     const [logoSVG, setLogoSVG] = useState<string | null>(null);
+
+    // Initialize env vars from mcp object
+    // Handle migration from old dict format to new list format transparently
+    const [envVars, setEnvVars] = useState<{ name: string; description: string; default_value: string; required: boolean; tool_ids: string[] }[]>(() => {
+        if (!mcp?.env_vars) return [];
+        if (Array.isArray(mcp.env_vars)) {
+            // Already new format (ensure tool_ids exists)
+            return mcp.env_vars.map((e: any) => ({ ...e, tool_ids: e.tool_ids || [] }));
+        } else {
+            // Legacy dict format - migrate
+            return Object.entries(mcp.env_vars).map(([key, value]) => ({
+                name: key,
+                description: '',
+                default_value: String(value),
+                required: false,
+                tool_ids: []
+            }));
+        }
+    });
+
+    // Temp state for scope modal
+    const [scopeModalIndex, setScopeModalIndex] = useState<number | null>(null);
 
     useEffect(() => {
         if (mcp?.id && mcp?.has_logo) {
@@ -116,7 +138,9 @@ const MCPFormDialog: React.FC<MCPFormDialogProps> = ({ mcp, onClose, onSuccess }
                 body: JSON.stringify({
                     name: name.trim(),
                     description: description.trim(),
-                    tool_ids: selectedToolIds
+                    tool_ids: selectedToolIds,
+                    // Send full rich list of env vars
+                    env_vars: envVars.filter(e => e.name.trim() !== '')
                 })
             });
 
@@ -171,6 +195,9 @@ const MCPFormDialog: React.FC<MCPFormDialogProps> = ({ mcp, onClose, onSuccess }
         return acc;
     }, {} as Record<string, Tool[]>);
 
+    // Filter tools actually selected in the MCP for the scope selector
+    const enabledTools = allTools.filter(t => selectedToolIds.includes(t.id));
+
     // If showing API key after creation
     if (newApiKey) {
         return (
@@ -216,7 +243,99 @@ const MCPFormDialog: React.FC<MCPFormDialogProps> = ({ mcp, onClose, onSuccess }
 
     return (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#0b0b11] rounded-lg max-w-4xl w-full shadow-2xl border border-[#1a1b26] max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-[#0b0b11] rounded-lg max-w-4xl w-full shadow-2xl border border-[#1a1b26] max-h-[90vh] overflow-hidden flex flex-col relative">
+
+                {/* Scope Selection Modal */}
+                {scopeModalIndex !== null && (
+                    <div className="absolute inset-0 z-50 bg-black/90 flex flex-col p-6 animate-in fade-in duration-200">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-white">
+                                    Tools Scope for <span className="text-[#50fa7b] font-mono">{envVars[scopeModalIndex].name || 'VARIABLE'}</span>
+                                </h3>
+                                <p className="text-sm text-[#6272a4]">Select which tools should receive this environment variable.</p>
+                            </div>
+                            <button
+                                onClick={() => setScopeModalIndex(null)}
+                                className="text-[#6272a4] hover:text-white"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="flex mb-4 gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                    const newEnvVars = [...envVars];
+                                    newEnvVars[scopeModalIndex].tool_ids = []; // Empty = All (Global)
+                                    setEnvVars(newEnvVars);
+                                }}
+                                className={`border-${envVars[scopeModalIndex].tool_ids.length === 0 ? '[#50fa7b] bg-[#50fa7b]/10' : '[#6272a4]'}`}
+                            >
+                                🌍 Global (All Tools)
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                    // Just a label/container for the list below
+                                }}
+                                className="cursor-default border-transparent text-[#6272a4]"
+                            >
+                                Or Select Specific:
+                            </Button>
+                        </div>
+
+                        <div className="flex-1 overflow-auto custom-scrollbar border border-[#282a36] rounded bg-[#0b0b11] p-2">
+                            {enabledTools.length === 0 ? (
+                                <p className="text-center text-[#6272a4] py-8">No tools enabled for this MCP yet. Select tools in the main form first.</p>
+                            ) : (
+                                <div className="space-y-1">
+                                    {enabledTools.map(tool => {
+                                        const isSelected = envVars[scopeModalIndex].tool_ids.includes(tool.id);
+                                        // Specific selection logic
+
+                                        return (
+                                            <div key={tool.id} className="flex items-center gap-3 p-2 hover:bg-[#1a1b26] rounded cursor-pointer" onClick={() => {
+                                                const currentIds = envVars[scopeModalIndex].tool_ids;
+                                                const newEnvVars = [...envVars];
+
+                                                if (isSelected) {
+                                                    // Remove
+                                                    newEnvVars[scopeModalIndex].tool_ids = currentIds.filter(id => id !== tool.id);
+                                                } else {
+                                                    // Add
+                                                    newEnvVars[scopeModalIndex].tool_ids = [...currentIds, tool.id];
+                                                }
+                                                setEnvVars(newEnvVars);
+                                            }}>
+                                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-[#50fa7b] border-[#50fa7b]' : 'border-[#6272a4]'}`}>
+                                                    {isSelected && <Check size={12} className="text-black" />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <span className={isSelected ? 'text-white font-medium' : 'text-[#aeb1b7]'}>{tool.name}</span>
+                                                    <span className="text-[#6272a4] text-xs ml-2">({tool.id})</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                            <Button
+                                onClick={() => setScopeModalIndex(null)}
+                                className="bg-[#50fa7b] hover:bg-[#50fa7b] text-black font-bold"
+                            >
+                                Done
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="bg-gradient-to-r from-[#1a1b26] to-[#282a36] px-6 py-4 flex justify-between items-center border-b border-[#1a1b26]">
                     <h3 className="text-xl font-bold text-white uppercase tracking-wider">
@@ -267,6 +386,117 @@ const MCPFormDialog: React.FC<MCPFormDialogProps> = ({ mcp, onClose, onSuccess }
                         onLogoChange={setLogoSVG}
                         label="MCP Server Logo"
                     />
+
+                    {/* Env Vars Configuration (Global Contract) */}
+                    <div className="bg-[#1a1b26] rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-[#8be9fd] mb-1">Environment Variables Contract</h3>
+                                <p className="text-xs text-[#6272a4]">Define expected variables. Clients (Claude) will see "Required" or descriptions.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setEnvVars([...envVars, { name: '', description: '', default_value: '', required: false, tool_ids: [] }])}
+                                className="p-1 hover:bg-[#282a36] rounded text-[#50fa7b] transition-colors"
+                                title="Add Variable"
+                            >
+                                <Plus size={16} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {envVars.map((env, index) => (
+                                <div key={index} className="bg-[#0b0b11] p-3 rounded border border-[#282a36] flex flex-col gap-2 relative group">
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                placeholder="VARIABLE_NAME (e.g. GITHUB_TOKEN)"
+                                                value={env.name}
+                                                onChange={(e) => {
+                                                    const newEnvVars = [...envVars];
+                                                    newEnvVars[index].name = e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+                                                    setEnvVars(newEnvVars);
+                                                }}
+                                                className="w-full bg-[#1a1b26] text-[#50fa7b] rounded px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-[#8be9fd] placeholder-[#6272a4]"
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                placeholder="Description (visible to client)"
+                                                value={env.description}
+                                                onChange={(e) => {
+                                                    const newEnvVars = [...envVars];
+                                                    newEnvVars[index].description = e.target.value;
+                                                    setEnvVars(newEnvVars);
+                                                }}
+                                                className="w-full bg-[#1a1b26] text-white rounded px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#8be9fd] border border-[#282a36] placeholder-[#6272a4]"
+                                            />
+                                        </div>
+
+                                        {/* Scope Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setScopeModalIndex(index)}
+                                            className={`p-2 rounded transition-colors flex items-center gap-1 border ${env.tool_ids.length > 0 ? 'bg-[#ff79c6]/10 border-[#ff79c6] text-[#ff79c6]' : 'border-[#282a36] text-[#6272a4] hover:text-white'}`}
+                                            title="Configure Scope"
+                                        >
+                                            <Filter size={14} />
+                                            <span className="text-[10px] font-bold uppercase">
+                                                {env.tool_ids.length > 0 ? `${env.tool_ids.length} Tools` : 'Global'}
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newEnvVars = envVars.filter((_, i) => i !== index);
+                                                setEnvVars(newEnvVars);
+                                            }}
+                                            className="p-2 text-[#ff5555] hover:bg-[#ff5555]/10 rounded transition-colors self-start"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-4 items-center pl-1">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                placeholder="Default Value (Optional Secret)"
+                                                value={env.default_value}
+                                                onChange={(e) => {
+                                                    const newEnvVars = [...envVars];
+                                                    newEnvVars[index].default_value = e.target.value;
+                                                    setEnvVars(newEnvVars);
+                                                }}
+                                                className="w-full bg-[#1a1b26] text-[#f1fa8c] rounded px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#f1fa8c] border border-[#282a36] placeholder-[#6272a4]"
+                                            />
+                                        </div>
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                                            <input
+                                                type="checkbox"
+                                                checked={env.required}
+                                                onChange={(e) => {
+                                                    const newEnvVars = [...envVars];
+                                                    newEnvVars[index].required = e.target.checked;
+                                                    setEnvVars(newEnvVars);
+                                                }}
+                                                className="appearance-none h-4 w-4 bg-[#1a1b26] border border-[#6272a4] rounded cursor-pointer checked:bg-[#ff5555] checked:border-[#ff5555] transition-all"
+                                            />
+                                            {env.required && <Check size={12} className="absolute text-white pointer-events-none ml-0.5" />}
+                                            <span className={`text-xs font-bold ${env.required ? 'text-[#ff5555]' : 'text-[#6272a4]'}`}>REQUIRED</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            ))}
+                            {envVars.length === 0 && (
+                                <p className="text-xs text-[#6272a4] italic text-center py-4 border border-dashed border-[#282a36] rounded hover:border-[#8be9fd] cursor-pointer" onClick={() => setEnvVars([...envVars, { name: '', description: '', default_value: '', required: false, tool_ids: [] }])}>
+                                    + Add Contract Variable
+                                </p>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Tools Selection */}
                     <div>

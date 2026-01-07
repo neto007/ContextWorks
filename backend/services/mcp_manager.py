@@ -24,12 +24,12 @@ def verify_api_key(api_key: str, api_key_hash: str) -> bool:
 
 # MCP Server Operations
 
-def create_mcp_server(name: str, description: str, tool_ids: List[str]) -> Dict[str, Any]:
+def create_mcp_server(name: str, description: str, tool_ids: List[str], env_vars: List[Dict[str, Any]] = []) -> Dict[str, Any]:
     mcp_id = f"mcp_{secrets.token_hex(8)}"
     api_key = generate_api_key()
     api_key_hash = hash_api_key(api_key)
     
-    result = mcp_repo.create_mcp_server(mcp_id, name, description, api_key_hash, tool_ids)
+    result = mcp_repo.create_mcp_server(mcp_id, name, description, api_key_hash, tool_ids, env_vars)
     result['api_key'] = api_key # Only shown once
     return result
 

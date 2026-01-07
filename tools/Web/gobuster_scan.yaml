@@ -1,0 +1,86 @@
+name: Gobuster Scan
+description: Fast directory and DNS busting tool written in Go.
+docker:
+  image: ''
+  base_image: python:3.11-slim
+  apt_packages:
+  - wget
+  - ca-certificates
+  pip_packages: []
+  run_commands:
+  - wget https://github.com/OJ/gobuster/releases/download/v3.6.0/gobuster_Linux_x86_64.tar.gz
+  - tar -xzf gobuster_Linux_x86_64.tar.gz
+  - mv gobuster /usr/local/bin/
+  - rm gobuster_Linux_x86_64.tar.gz
+  - mkdir -p /usr/share/wordlists
+  - wget -qO /usr/share/wordlists/common.txt https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt
+  docker_mode: custom
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      description: Target URL (e.g. http://10.10.10.10)
+      required: true
+    mode:
+      type: string
+      description: Gobuster mode (dir, dns, s3, vhost)
+      enum: [dir, dns, s3, vhost]
+      default: dir
+    wordlist:
+      type: string
+      description: Path to wordlist (default matches installed common.txt)
+      default: /usr/share/wordlists/common.txt
+    extensions:
+      type: string
+      description: Comma separated list of extensions (e.g. php,txt,html)
+      default: ''
+    threads:
+      type: integer
+      description: Number of concurrent threads
+      default: 10
+    arguments:
+      type: string
+      description: Additional Gobuster arguments
+      default: ''
+  required:
+  - target
+arguments:
+- name: target
+  type: string
+  description: Target URL
+  required: true
+- name: mode
+  type: string
+  description: Gobuster mode
+  required: false
+- name: wordlist
+  type: string
+  description: Path to wordlist
+  required: false
+- name: extensions
+  type: string
+  description: Extensions to search
+  required: false
+- name: threads
+  type: integer
+  description: Number of threads
+  required: false
+- name: arguments
+  type: string
+  description: Additional arguments
+  required: false

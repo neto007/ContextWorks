@@ -204,8 +204,7 @@ export const useToolForm = (initialData?: any) => {
                 arguments: arguments_,
                 docker: {
                     docker_mode: dockerMode,
-                    image: dockerMode === 'preexisting' ? preexistingImage :
-                        dockerMode === 'custom' ? `security-platform-tool-${toolName.toLowerCase().replace(/\s+/g, '-')}:latest` : undefined,
+                    image: dockerMode === 'preexisting' ? preexistingImage : undefined,
                     base_image: (dockerMode === 'auto' || dockerMode === 'custom') ? baseImage : undefined,
                     apt_packages: aptPackages.length > 0 ? aptPackages : undefined,
                     pip_packages: pipPackages.length > 0 ? pipPackages : undefined,

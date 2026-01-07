@@ -1,0 +1,40 @@
+name: ThreatMapper Scan
+description: Open source vulnerability management and threat mapping.
+arguments:
+  - name: target
+    description: Target image name
+    required: true
+    type: string
+  - name: arguments
+    description: Additional arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+  run_commands:
+    - curl -L https://github.com/deepfence/ThreatMapper/releases/download/v2.2.1/vulnerability-scanner_linux_amd64 -o /usr/local/bin/vulnerability-scanner
+    - curl -L https://github.com/deepfence/SecretScanner/releases/download/v1.6.0/secret-scanner_linux_amd64 -o /usr/local/bin/secret-scanner
+    - chmod +x /usr/local/bin/vulnerability-scanner /usr/local/bin/secret-scanner
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+    arguments:
+      type: string
+      default: ""

@@ -52,16 +52,33 @@ class ImageBuilderService:
         
         dockerfile = f"FROM {base_image} as builder\n\n"
         
+        # Add user if specified
+        if "user" in docker_config:
+            dockerfile += f"USER {docker_config['user']}\n\n"
+        
         # Add apt packages
+        is_alpine = "alpine" in base_image.lower()
+        
         if apt_packages:
-            dockerfile += "RUN apt-get update && apt-get install -y \\\n"
-            for pkg in apt_packages:
-                dockerfile += f"    {pkg} \\\n"
-            dockerfile += "    && rm -rf /var/lib/apt/lists/*\n\n"
+            if is_alpine:
+                dockerfile += "RUN apk add --no-cache"
+                for pkg in apt_packages:
+                    dockerfile += f" {pkg}"
+                dockerfile += "\n\n"
+            else:
+                dockerfile += "RUN apt-get update && apt-get install -y --no-install-recommends \\\n"
+                for pkg in apt_packages:
+                    dockerfile += f"    {pkg} \\\n"
+                dockerfile += "    && rm -rf /var/lib/apt/lists/*\n\n"
         
         # Add run commands
         if run_commands:
+            # For non-alpine images, if we are running apt commands in run_commands, 
+            # we might need a manual apt-get update if apt_packages was empty.
+            # But safer to just let the user handle it or add a helper.
             for cmd in run_commands:
+                # If command starts with apt and we haven't run update yet, it might fail.
+                # However, many images already have some cache or users might add update.
                 dockerfile += f"RUN {cmd}\n"
             dockerfile += "\n"
             

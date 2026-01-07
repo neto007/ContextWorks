@@ -22,14 +22,14 @@ K8S_NAMESPACE = settings.K8S_NAMESPACE
 # EXECUTION LOGIC
 # ============================================================================
 
-def run_tool_script(tool_identifier_or_data: Union[str, Dict[str, Any]], args: Dict[str, Any]) -> Dict[str, Any]:
+def run_tool_script(tool_identifier_or_data: Union[str, Dict[str, Any]], args: Dict[str, Any], env: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """
     Executes a tool synchronousy.
     """
     job_id = str(uuid.uuid4())
-    return run_tool_k8s_job_sync(tool_identifier_or_data, args, job_id)
+    return run_tool_k8s_job_sync(tool_identifier_or_data, args, job_id, env)
 
-def run_tool_k8s_job_sync(tool_identifier_or_data: Union[str, Dict], args: Dict[str, Any], job_id: str) -> Dict[str, Any]:
+def run_tool_k8s_job_sync(tool_identifier_or_data: Union[str, Dict], args: Dict[str, Any], job_id: str, env: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     # Resolve tool if string
     if isinstance(tool_identifier_or_data, str):
         try:
@@ -43,8 +43,11 @@ def run_tool_k8s_job_sync(tool_identifier_or_data: Union[str, Dict], args: Dict[
     tool_name_safe = utils.sanitize_k8s_name(tool_name)
     job_name = f"{tool_name_safe}-{job_id}"
     
+    # Create execution record
+    database.create_execution(job_id, tool_name, tool_identifier_or_data if isinstance(tool_identifier_or_data, str) else tool_name, args, status="running")
+    
     try:
-        create_k8s_job(tool_data, args, job_name, job_id)
+        create_k8s_job(tool_data, args, job_name, job_id, env)
         
         batch_v1 = client.BatchV1Api()
         core_v1 = client.CoreV1Api()
@@ -63,12 +66,14 @@ def run_tool_k8s_job_sync(tool_identifier_or_data: Union[str, Dict], args: Dict[
                     time.sleep(1)
                     pod_list = core_v1.list_namespaced_pod(namespace=K8S_NAMESPACE, label_selector=f"job-name={job_name}")
                     if not pod_list.items:
+                        database.update_execution(job_id, status="failed", logs="Pod not found")
                         return {"result": None, "logs": "Pod not found", "exit_code": -1}
                 
                 pod_name = pod_list.items[0].metadata.name
                 logs = core_v1.read_namespaced_pod_log(name=pod_name, namespace=K8S_NAMESPACE)
                 delete_k8s_job(job_name)
                 result = parse_result_from_logs(logs)
+                database.update_execution(job_id, status="success", logs=logs, result=json.dumps(result) if result else "")
                 return {"result": result, "logs": logs, "exit_code": 0}
             
             if job.status.failed:
@@ -80,14 +85,18 @@ def run_tool_k8s_job_sync(tool_identifier_or_data: Union[str, Dict], args: Dict[
                         logs = core_v1.read_namespaced_pod_log(name=pod_name, namespace=K8S_NAMESPACE)
                 except: pass
                 delete_k8s_job(job_name)
+                database.update_execution(job_id, status="failed", logs=logs)
                 return {"result": None, "logs": logs, "exit_code": 1}
                 
             time.sleep(1)
+        
+        database.update_execution(job_id, status="failed", logs="Timeout")
         return {"result": None, "logs": "Timeout", "exit_code": -1}
     except Exception as e:
+        database.update_execution(job_id, status="failed", logs=str(e))
         return {"result": None, "logs": str(e), "exit_code": -1}
 
-async def execute_tool_stream(tool_identifier_or_data: Union[str, Dict[str, Any]], args: Dict[str, Any], job_id: Optional[str] = None) -> AsyncGenerator[str, None]:
+async def execute_tool_stream(tool_identifier_or_data: Union[str, Dict[str, Any]], args: Dict[str, Any], job_id: Optional[str] = None, env: Optional[Dict[str, str]] = None) -> AsyncGenerator[str, None]:
     """
     Executes a tool as a K8s Job and streams output.
     """
@@ -140,7 +149,7 @@ async def execute_tool_stream(tool_identifier_or_data: Union[str, Dict[str, Any]
 
     try:
         if not is_reattach:
-            await loop.run_in_executor(None, lambda: create_k8s_job(tool_data, args, job_name, job_id))
+            await loop.run_in_executor(None, lambda: create_k8s_job(tool_data, args, job_name, job_id, env))
         core_v1 = client.CoreV1Api()
         
         pod_name = None

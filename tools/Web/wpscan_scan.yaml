@@ -1,0 +1,54 @@
+name: WPScan
+description: WordPress Security Scanner.
+arguments:
+  - name: target
+    description: Target WordPress URL
+    required: true
+    type: string
+  - name: api_token
+    description: WPScan API Token (required for vulnerability database access)
+    required: false
+    type: string
+  - name: arguments
+    description: Additional WPScan arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: ruby:3.2-slim
+  apt_packages:
+    - curl
+    - patch
+    - build-essential
+    - liblzma-dev
+    - libcurl4-openssl-dev
+    - zlib1g-dev
+    - python3
+  run_commands:
+    - gem install wpscan
+    - wpscan --update
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target WordPress URL
+    api_token:
+      type: string
+      description: WPScan API Token
+    arguments:
+      type: string
+      description: Additional WPScan arguments
+      default: ""

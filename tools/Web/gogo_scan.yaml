@@ -1,0 +1,43 @@
+name: gogo Discovery
+description: High-performance asset discovery and fingerprinting.
+# Force rebuild for Alpine fix
+arguments:
+  - name: target
+    description: Target IP or Range
+    required: true
+    type: string
+  - name: arguments
+    description: Additional gogo arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: golang:1.21-alpine
+  apt_packages:
+    - git
+  run_commands:
+    - git clone --depth 1 https://github.com/chainreactors/gogo.git /opt/gogo
+    - cd /opt/gogo && go build -o /usr/local/bin/gogo .
+    - rm -rf /opt/gogo
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target IP or Range
+    arguments:
+      type: string
+      description: Additional gogo arguments
+      default: ""

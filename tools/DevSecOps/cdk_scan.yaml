@@ -1,0 +1,32 @@
+name: CDK Cloud Scan
+description: Toolkit for container security and cloud escape analysis.
+arguments:
+  - name: arguments
+    description: Additional CDK arguments (e.g. evaluate, run)
+    required: false
+    type: string
+    default: "evaluate"
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+  run_commands:
+    - curl -L https://github.com/cdk-team/CDK/releases/download/v1.5.3/cdk_linux_amd64 -o /usr/local/bin/cdk
+    - chmod +x /usr/local/bin/cdk
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+schema:
+  type: object
+  properties:
+    arguments:
+      type: string
+      default: "evaluate"

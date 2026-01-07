@@ -1,0 +1,83 @@
+name: HTTPX Scan
+description: Fast and multi-purpose HTTP toolkit allowed to running multiple probes.
+docker:
+  image: ''
+  base_image: python:3.11-slim
+  apt_packages:
+  - wget
+  - ca-certificates
+  pip_packages: []
+  run_commands:
+  - wget https://github.com/projectdiscovery/httpx/releases/download/v1.6.0/httpx_1.6.0_linux_amd64.zip
+  - apt-get update && apt-get install -y unzip && unzip httpx_1.6.0_linux_amd64.zip
+  - mv httpx /usr/local/bin/
+  - rm httpx_1.6.0_linux_amd64.zip
+  docker_mode: custom
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      description: Target URL or Host (e.g. http://10.10.10.10 or example.com)
+      required: true
+    title:
+      type: boolean
+      description: Display page title
+      default: true
+    status_code:
+      type: boolean
+      description: Display status code
+      default: true
+    tech_detect:
+      type: boolean
+      description: Display technology in use based on wappalyzer dataset
+      default: true
+    follow_redirects:
+      type: boolean
+      description: Follow HTTP redirects
+      default: false
+    arguments:
+      type: string
+      description: Additional HTTPX arguments
+      default: ''
+  required:
+  - target
+arguments:
+- name: target
+  type: string
+  description: Target URL or Host
+  required: true
+- name: title
+  type: boolean
+  description: Display page title
+  required: false
+- name: status_code
+  type: boolean
+  description: Display status code
+  required: false
+- name: tech_detect
+  type: boolean
+  description: Display technology
+  required: false
+- name: follow_redirects
+  type: boolean
+  description: Follow redirects
+  required: false
+- name: arguments
+  type: string
+  description: Additional arguments
+  required: false

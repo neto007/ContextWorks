@@ -1,0 +1,43 @@
+name: Dalfox XSS
+description: Parameter Analysis and XSS Scanning tool.
+arguments:
+  - name: target
+    description: Target URL
+    required: true
+    type: string
+  - name: arguments
+    description: Additional Dalfox arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+  run_commands:
+    - curl -sL https://github.com/hahwul/dalfox/releases/download/v2.9.1/dalfox_2.9.1_linux_amd64.tar.gz -o dalfox.tar.gz
+    - tar -xf dalfox.tar.gz
+    - mv dalfox /usr/local/bin/
+    - rm dalfox.tar.gz
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL
+    arguments:
+      type: string
+      description: Additional Dalfox arguments
+      default: ""

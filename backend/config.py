@@ -28,6 +28,13 @@ class Settings:
     K8S_LOG_ATTACH_RETRIES: int = int(os.getenv("K8S_LOG_RETRIES", "120"))
     K8S_POD_WAIT_ASYNC_SECONDS: int = int(os.getenv("K8S_POD_WAIT_ASYNC", "60"))
     
+    # Docker Registry (interno do cluster ou externo)
+    # DOCKER_REGISTRY: Endereço usado pelos nodes K8s para Pull (Cluster IP para evitar problemas de DNS no Node)
+    # 10.98.175.36 é o Cluster IP do serviço 'registry' no namespace 'kube-system'
+    DOCKER_REGISTRY: str = os.getenv("DOCKER_REGISTRY", "10.98.175.36:80")
+    # DOCKER_REGISTRY_PUSH: Endereço usado pelo Kaniko para Push (DNS interno do cluster)
+    DOCKER_REGISTRY_PUSH: str = os.getenv("DOCKER_REGISTRY_PUSH", "registry.kube-system")
+    
     # Tools
     TOOLS_BASE_DIR: str = os.getenv(
         "TOOLS_BASE_DIR",

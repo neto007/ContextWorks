@@ -95,17 +95,6 @@ class MCPServer:
     def tool_to_mcp_schema(self, tool: Dict[str, Any]) -> Dict[str, Any]:
         """
         Convert tool metadata to MCP tool schema.
-        
-        MCP tool schema format:
-        {
-            "name": "tool_name",
-            "description": "Tool description",
-            "inputSchema": {
-                "type": "object",
-                "properties": {...},
-                "required": [...]
-            }
-        }
         """
         # Convert arguments to JSON schema
         properties = {}
@@ -138,12 +127,59 @@ class MCPServer:
             if arg.get('required', False):
                 required.append(arg_name)
         
+        # Build Env Vars Schema from MCP Config
+        env_properties = {}
+        env_required = []
+        
+        server_env_vars = self.mcp_config.get('env_vars', [])
+        # Ensure it's a list (backward compat)
+        if isinstance(server_env_vars, dict):
+            server_env_vars = [] 
+            
+        for env_var in server_env_vars:
+            name = env_var.get('name')
+            if not name: continue
+            
+            # Check Scope
+            scope = env_var.get('tool_ids', [])
+            if scope and tool['id'] not in scope:
+                continue
+
+            
+            env_properties[name] = {
+                "type": "string",
+                "description": env_var.get('description', '')
+            }
+            
+            # Note: We do NOT expose the default value in the schema description to avoid leaking secrets
+            # The client just needs to know it exists or is required
+            
+            if env_var.get('required', False):
+                env_required.append(name)
+        
+        # Env schema object
+        env_schema = {
+            "type": "object",
+            "properties": env_properties,
+            "description": "Environment variables to inject into the tool execution context"
+        }
+        
+        # Only set required if strictly needed by server configuration
+        if env_required:
+            env_schema["required"] = env_required
+        else:
+             # Allow any other env vars if not strict
+             env_schema["additionalProperties"] = {"type": "string"}
+
         return {
             'name': tool['id'],
             'description': tool.get('description', ''),
             'inputSchema': {
                 'type': 'object',
-                'properties': properties,
+                'properties': {
+                    **properties,
+                    "env": env_schema
+                },
                 'required': required
             }
         }
@@ -198,6 +234,31 @@ class MCPServer:
         if not tool_name:
             raise ValueError("Tool name is required")
         
+        # Merge global MCP env vars with request env vars
+        # Process global env vars list to extract defaults
+        global_env_defaults = {}
+        raw_env_vars = self.mcp_config.get('env_vars', [])
+        
+        # Backward compatibility if it's still a dict (should be migrated, but safe guard)
+        if isinstance(raw_env_vars, dict):
+             global_env_defaults = raw_env_vars
+        elif isinstance(raw_env_vars, list):
+            for item in raw_env_vars:
+                if isinstance(item, dict) and item.get('name') and item.get('default_value'):
+                     # Check Scope
+                     scope = item.get('tool_ids', [])
+                     if scope and tool_name not in scope:
+                         continue
+                         
+                     global_env_defaults[item['name']] = item['default_value']
+
+        request_env = params.get('env', {})
+        
+        # Combine: Start with global defaults, override/append with request
+        final_env = {**global_env_defaults}
+        if request_env:
+            final_env.update(request_env)
+        
         # Find tool
         tool = self.get_tool_by_id(tool_name)
         if not tool:
@@ -213,7 +274,7 @@ class MCPServer:
         exit_code = 0
         
         try:
-            async for event in execution_service.execute_tool_stream(tool['path'], arguments):
+            async for event in execution_service.execute_tool_stream(tool['path'], arguments, env=final_env):
                 event_data = json.loads(event)
                 if event_data['type'] == 'stdout':
                     result_text += event_data['data']

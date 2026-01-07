@@ -1,0 +1,51 @@
+name: Trivy Scan
+description: Vulnerability scanner for containers and other artifacts.
+arguments:
+  - name: target
+    description: Target image or path
+    required: true
+    type: string
+  - name: scan_type
+    description: Type of scan (image, config, fs, repo)
+    required: false
+    type: string
+    default: "image"
+  - name: arguments
+    description: Additional Trivy arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - wget
+    - curl
+  run_commands:
+    - wget https://github.com/aquasecurity/trivy/releases/download/v0.48.3/trivy_0.48.3_Linux-64bit.tar.gz
+    - tar -xzf trivy_0.48.3_Linux-64bit.tar.gz
+    - mv trivy /usr/local/bin/
+    - rm trivy_0.48.3_Linux-64bit.tar.gz
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2048Mi
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+    scan_type:
+      type: string
+      enum: ["image", "config", "fs", "repo"]
+      default: "image"
+    arguments:
+      type: string
+      default: ""

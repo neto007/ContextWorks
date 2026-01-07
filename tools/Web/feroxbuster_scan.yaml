@@ -1,0 +1,61 @@
+name: Feroxbuster Scan
+description: Fast, simple, recursive content discovery tool.
+# Force rebuild for build optimization fix
+arguments:
+  - name: target
+    description: Target URL
+    required: true
+    type: string
+  - name: wordlist
+    description: Path or URL to wordlist
+    required: false
+    type: string
+  - name: threads
+    description: Number of concurrent threads
+    required: false
+    type: integer
+    default: 50
+  - name: arguments
+    description: Additional Feroxbuster arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+    - procps
+  run_commands:
+    - curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/master/install-nix.sh | bash
+    - mv feroxbuster /usr/local/bin/
+    - mkdir -p /usr/share/wordlists
+    - curl -sL https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt -o /usr/share/wordlists/common.txt
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL
+    wordlist:
+      type: string
+      description: Path or URL to wordlist
+    threads:
+      type: integer
+      description: Number of concurrent threads
+      default: 50
+    arguments:
+      type: string
+      description: Additional Feroxbuster arguments
+      default: ""

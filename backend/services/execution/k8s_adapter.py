@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from kubernetes import client
 from config import settings
 from core.logger import logger
@@ -7,7 +7,7 @@ from .resolver import get_tool_config_from_data
 
 K8S_NAMESPACE = settings.K8S_NAMESPACE
 
-def create_k8s_job(tool_data: Dict[str, Any], args: Dict[str, Any], job_name: str, job_id: str):
+def create_k8s_job(tool_data: Dict[str, Any], args: Dict[str, Any], job_name: str, job_id: str, env_vars: Optional[Dict[str, str]] = None):
     """
     Creates the K8s Job object using data from DB.
     """
@@ -71,6 +71,16 @@ except Exception as e:
 """
 
     batch_v1 = client.BatchV1Api()
+
+    # Prepare Environment Variables
+    k8s_env = [
+        client.V1EnvVar(name="PYTHONUNBUFFERED", value="1"),
+        client.V1EnvVar(name="TOOL_JOB_ID", value=job_id)
+    ]
+    
+    if env_vars:
+        for key, value in env_vars.items():
+            k8s_env.append(client.V1EnvVar(name=key, value=str(value)))
     
     job = client.V1Job(
         api_version="batch/v1",
@@ -92,7 +102,7 @@ except Exception as e:
                             image=tool_image,
                             image_pull_policy="IfNotPresent",
                             command=["python3", "-c", wrapper_code, script_content, json.dumps(args)],
-                            env=[client.V1EnvVar(name="PYTHONUNBUFFERED", value="1")],
+                            env=k8s_env,
                             resources=client.V1ResourceRequirements(
                                 requests=tool_resources["requests"],
                                 limits=tool_resources["limits"]

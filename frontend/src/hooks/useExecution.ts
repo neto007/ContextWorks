@@ -12,7 +12,7 @@ export const useExecution = () => {
     const [output, setOutput] = useState<ExecutionState | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const runTool = useCallback(async (fullId: string, path: string, args: Record<string, any>) => {
+    const runTool = useCallback(async (fullId: string, path: string, args: Record<string, any>, env?: Record<string, string>) => {
         setExecuting(true);
         setOutput({ result: "", logs: "", exitCode: undefined });
         setExecutionId(null);
@@ -27,7 +27,8 @@ export const useExecution = () => {
                 body: JSON.stringify({
                     tool_id: fullId,
                     path: path,
-                    arguments: args
+                    arguments: args,
+                    env: env
                 }),
                 signal: abortController.signal
             });

@@ -1,0 +1,38 @@
+name: Murphysec
+description: Open source security scanner (SCA focus).
+arguments:
+  - name: target
+    description: Target directory to scan
+    required: false
+    type: string
+    default: "."
+  - name: arguments
+    description: Additional Murphysec arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - curl
+  run_commands:
+    - curl -fsSL https://raw.githubusercontent.com/murphysecurity/murphysec/main/install.sh | sh
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      default: "."
+    arguments:
+      type: string
+      default: ""

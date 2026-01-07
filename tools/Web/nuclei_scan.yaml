@@ -1,0 +1,77 @@
+arguments:
+- description: Target URL or Host
+  name: target
+  required: true
+  type: string
+- description: Specific templates to run (e.g. 'cves', 'vulnerabilities/generic')
+  name: templates
+  required: false
+  type: string
+- description: Filter by severity (info, low, medium, high, critical)
+  name: severity
+  required: false
+  type: string
+- description: Filter by tags
+  name: tags
+  required: false
+  type: string
+- description: Additional Nuclei arguments
+  name: arguments
+  required: false
+  type: string
+description: Updated description 1767820027.3840492
+docker:
+  apt_packages:
+  - wget
+  - unzip
+  - git
+  base_image: python:3.11-slim
+  docker_mode: custom
+  image: ''
+  pip_packages: []
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+  run_commands:
+  - wget https://github.com/projectdiscovery/nuclei/releases/download/v3.2.0/nuclei_3.2.0_linux_amd64.zip
+  - unzip nuclei_3.2.0_linux_amd64.zip
+  - mv nuclei /usr/local/bin/
+  - rm nuclei_3.2.0_linux_amd64.zip
+  - nuclei -update-templates
+name: Nuclei Scan
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2048Mi
+  requests:
+    cpu: 500m
+    memory: 1024Mi
+schema:
+  properties:
+    arguments:
+      default: ''
+      description: Additional Nuclei arguments
+      type: string
+    severity:
+      default: ''
+      description: Filter by severity (info, low, medium, high, critical)
+      type: string
+    tags:
+      default: ''
+      description: Filter by tags
+      type: string
+    target:
+      description: Target URL or Host
+      required: true
+      type: string
+    templates:
+      default: ''
+      description: Specific templates to run (e.g. 'cves', 'vulnerabilities/generic')
+      type: string
+  required:
+  - target
+  type: object

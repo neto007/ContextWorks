@@ -1,0 +1,26 @@
+name: Dirb Scan
+description: Dirb is a Web Content Scanner. It looks for existing (and/or hidden) Web Objects by dictionary attack.
+category: Web
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - dirb
+    - python3
+    - ca-certificates
+  run_commands:
+    - mkdir -p /app
+schema:
+  properties:
+    target:
+      type: string
+      description: Target URL to scan (e.g., http://example.com)
+    wordlist:
+      type: string
+      description: Custom wordlist (optional). If not provided, uses dirb default.
+    silent:
+      type: boolean
+      description: If true, only outputs the final JSON result.
+      default: false
+  required:
+    - target

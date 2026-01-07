@@ -1,0 +1,28 @@
+name: Dirsearch Scan
+description: Dirsearch is an advanced command-line tool designed to brute force directories and files in webservers.
+category: Web
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - dirsearch
+  run_commands:
+    - mkdir -p /app
+schema:
+  properties:
+    url:
+      type: string
+      description: Target URL (e.g., http://example.com)
+    extensions:
+      type: string
+      description: File extensions to check (comma separated, e.g. php,asp,txt)
+      default: "php,html,js,txt"
+    wordlist:
+      type: string
+      description: Custom wordlist path (optional)
+    threads:
+      type: integer
+      description: Number of threads
+      default: 10
+  required:
+    - url

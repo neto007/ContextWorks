@@ -1,0 +1,34 @@
+name: Kube-hunter
+description: Hunt for security weaknesses in Kubernetes clusters.
+arguments:
+  - name: target
+    description: Remote target (URL or IP). If empty, scans internal pod environment.
+    required: false
+    type: string
+  - name: arguments
+    description: Additional Kube-hunter arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - kube-hunter
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+    arguments:
+      type: string
+      default: ""

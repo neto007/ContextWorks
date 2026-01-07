@@ -17,7 +17,7 @@ def execute_tool(request: ToolExecutionRequest):
     if not identifier:
         raise HTTPException(status_code=400, detail="tool_id or path required")
 
-    output = execution_service.run_tool_script(identifier, request.arguments)
+    output = execution_service.run_tool_script(identifier, request.arguments, request.env)
     return {"output": output}
 
 @router.post("/execute/stream")
@@ -28,7 +28,7 @@ async def execute_tool_stream(request: ToolExecutionRequest):
         raise HTTPException(status_code=400, detail="tool_id or path required")
 
     return StreamingResponse(
-        execution_service.execute_tool_stream(identifier, request.arguments, request.job_id),
+        execution_service.execute_tool_stream(identifier, request.arguments, request.job_id, request.env),
         media_type="application/x-ndjson",
         headers={"X-Accel-Buffering": "no"}
     )

@@ -4,19 +4,19 @@ from typing import List, Dict, Any, Optional
 import psycopg2.extras
 from core.db_base import get_db_connection
 
-def create_mcp_server(mcp_id: str, name: str, description: str, api_key_hash: str, tool_ids: List[str]) -> Dict[str, Any]:
+def create_mcp_server(mcp_id: str, name: str, description: str, api_key_hash: str, tool_ids: List[str], env_vars: List[Dict[str, Any]] = []) -> Dict[str, Any]:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         now = datetime.utcnow().isoformat()
         cursor.execute('''
-            INSERT INTO mcp_servers (id, name, description, api_key_hash, tool_ids, created_at, updated_at, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (mcp_id, name, description, api_key_hash, json.dumps(tool_ids), now, now, 'active'))
+            INSERT INTO mcp_servers (id, name, description, api_key_hash, tool_ids, env_vars, created_at, updated_at, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (mcp_id, name, description, api_key_hash, json.dumps(tool_ids), json.dumps(env_vars), now, now, 'active'))
         conn.commit()
         return {
             'id': mcp_id, 'name': name, 'description': description,
-            'tool_ids': tool_ids, 'created_at': now, 'status': 'active'
+            'tool_ids': tool_ids, 'env_vars': env_vars, 'created_at': now, 'status': 'active'
         }
     finally:
         conn.close()
@@ -30,6 +30,7 @@ def get_mcp_server(mcp_id: str) -> Optional[Dict[str, Any]]:
         if not row: return None
         res = dict(row)
         res['tool_ids'] = json.loads(res['tool_ids']) if res['tool_ids'] else []
+        res['env_vars'] = json.loads(res.get('env_vars') or '[]')
         return res
     finally:
         conn.close()
@@ -44,6 +45,7 @@ def list_mcp_servers() -> List[Dict[str, Any]]:
         for row in rows:
             res = dict(row)
             res['tool_ids'] = json.loads(res['tool_ids']) if res['tool_ids'] else []
+            res['env_vars'] = json.loads(res.get('env_vars') or '[]')
             servers.append(res)
         return servers
     finally:
@@ -61,6 +63,9 @@ def update_mcp_server(mcp_id: str, update_data: Dict[str, Any]) -> bool:
                 params.append(value)
             elif key == 'tool_ids':
                 updates.append("tool_ids = %s")
+                params.append(json.dumps(value))
+            elif key == 'env_vars':
+                updates.append("env_vars = %s")
                 params.append(json.dumps(value))
             elif key == 'api_key_hash':
                 updates.append("api_key_hash = %s")

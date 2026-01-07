@@ -1,0 +1,38 @@
+name: Arjun Discovery
+description: Find hidden HTTP parameters.
+arguments:
+  - name: target
+    description: Target URL
+    required: true
+    type: string
+  - name: arguments
+    description: Additional Arjun arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  pip_packages:
+    - arjun
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL
+    arguments:
+      type: string
+      description: Additional Arjun arguments
+      default: ""

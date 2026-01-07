@@ -1,0 +1,41 @@
+name: Vesta Cloud Scan
+description: Cloud and Container Security Scanner.
+arguments:
+  - name: target
+    description: Target to scan
+    required: false
+    type: string
+  - name: arguments
+    description: Additional Vesta arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: golang:1.21-alpine
+  apt_packages:
+    - git
+    - python3
+  run_commands:
+    - git clone --depth 1 https://github.com/kvesta/vesta.git /opt/vesta
+    - cd /opt/vesta && go build -o /usr/local/bin/vesta ./cmd/vesta
+    - chmod +x /usr/local/bin/vesta
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    target:
+      type: string
+      description: Target to scan
+    arguments:
+      type: string
+      description: Additional Vesta arguments
+      default: ""

@@ -9,6 +9,7 @@ class ToolExecutionRequest(BaseModel):
     tool_id: Optional[str] = None
     job_id: Optional[str] = None # Optional for re-attaching to existing jobs
     arguments: Dict[str, Any]
+    env: Optional[Dict[str, str]] = None # Environment variables to inject
 
 class ToolContentRequest(BaseModel):
     path: Optional[str] = None # Deprecated, use tool_id

@@ -1,0 +1,37 @@
+name: SCMKit
+description: Toolkit for auditing SCM systems like GitHub, GitLab.
+arguments:
+  - name: arguments
+    description: Additional SCMKit arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: mcr.microsoft.com/dotnet/sdk:6.0
+  apt_packages:
+    - python3
+    - python3-pip
+    - git
+  run_commands:
+    - git clone --depth 1 https://github.com/h4wkst3r/SCMKit.git /opt/SCMKit
+    - cd /opt/SCMKit/SCMKit && sed -i 's/net48/net6.0/g' SCMKit.csproj
+    - cd /opt/SCMKit/SCMKit && dotnet publish -c Release -f net6.0 -o /opt/scmkit_bin
+    - echo '#!/bin/sh' > /usr/local/bin/scmkit
+    - echo 'dotnet /opt/scmkit_bin/SCMKit.dll "$@"' >> /usr/local/bin/scmkit
+    - chmod +x /usr/local/bin/scmkit
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  properties:
+    arguments:
+      type: string
+      default: ""

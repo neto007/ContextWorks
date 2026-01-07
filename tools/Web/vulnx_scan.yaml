@@ -1,0 +1,43 @@
+name: VulnX CMS Scanner
+description: CMS Vulnerability Scanner and Gathering Information.
+arguments:
+  - name: target
+    description: Target URL
+    required: true
+    type: string
+  - name: arguments
+    description: Additional VulnX arguments
+    required: false
+    type: string
+
+docker:
+  docker_mode: custom
+  base_image: python:3.11-slim
+  apt_packages:
+    - git
+  run_commands:
+    - git clone https://github.com/anouarbensaad/vulnx.git /opt/vulnx
+    - cd /opt/vulnx && pip install -r requirements.txt
+    - ln -s /opt/vulnx/vulnx.py /usr/local/bin/vulnx
+    - chmod +x /opt/vulnx/vulnx.py
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 200m
+    memory: 512Mi
+
+schema:
+  type: object
+  required:
+    - target
+  properties:
+    target:
+      type: string
+      description: Target URL
+    arguments:
+      type: string
+      description: Additional VulnX arguments
+      default: ""
