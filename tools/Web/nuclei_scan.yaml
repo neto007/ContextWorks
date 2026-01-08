@@ -25,7 +25,7 @@ docker:
   - wget
   - unzip
   - git
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   docker_mode: custom
   image: ''
   pip_packages: []

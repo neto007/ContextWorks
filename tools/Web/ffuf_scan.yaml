@@ -17,7 +17,7 @@ arguments:
 
 docker:
   docker_mode: custom
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   apt_packages:
     - curl
     - tar

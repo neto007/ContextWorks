@@ -2,7 +2,7 @@ name: Gobuster Scan
 description: Fast directory and DNS busting tool written in Go.
 docker:
   image: ''
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   apt_packages:
   - wget
   - ca-certificates

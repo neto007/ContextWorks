@@ -2,7 +2,7 @@ name: Nmap Scanner
 description: Advanced Network Security Scanner using Nmap
 docker:
   image: ''
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   apt_packages:
   - nmap btop
   pip_packages: []

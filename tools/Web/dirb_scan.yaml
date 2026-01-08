@@ -3,7 +3,7 @@ description: Dirb is a Web Content Scanner. It looks for existing (and/or hidden
 category: Web
 docker:
   docker_mode: custom
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   apt_packages:
     - dirb
     - python3

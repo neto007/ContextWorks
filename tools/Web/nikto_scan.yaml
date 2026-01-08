@@ -3,7 +3,7 @@ description: Web server scanner which performs comprehensive tests against web s
   for multiple items..
 docker:
   image: ''
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   apt_packages:
   - git
   - libnet-ssleay-perl

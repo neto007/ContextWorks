@@ -2,7 +2,7 @@ name: Semgrep Scan
 description: Static Application Security Testing (SAST) tool for finding bugs and security vulnerabilities. Supports local directories and Git repositories.
 docker:
   image: ''
-  base_image: python:3.11-slim
+  base_image: public.ecr.aws/docker/library/python:3.11-slim
   apt_packages:
   - git
   pip_packages:
