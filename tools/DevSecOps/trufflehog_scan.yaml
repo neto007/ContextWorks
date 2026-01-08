@@ -10,6 +10,11 @@ arguments:
     required: false
     type: string
     default: "git"
+  - name: only_verified
+    description: Show only verified secrets
+    required: false
+    type: boolean
+    default: true
   - name: arguments
     description: Additional Trufflehog arguments
     required: false
@@ -42,6 +47,9 @@ schema:
       type: string
       enum: ["git", "filesystem", "github", "gitlab"]
       default: "git"
+    only_verified:
+      type: boolean
+      default: true
     arguments:
       type: string
       default: ""
